@@ -8,8 +8,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Descargar Código
-        uses: actions/checkout@v4
+      - name: 1. Descargar Código Oficial
+        run: |
+          # Clonamos el código directamente desde el origen
+          git clone https://github.com/EvolutionAPI/evolution-api.git .
+          echo "Código descargado correctamente."
 
       - name: 2. Configurar Node.js 24
         uses: actions/setup-node@v4
@@ -19,21 +22,17 @@ jobs:
       - name: 3. Instalar Dependencias
         run: npm install
 
-      - name: 4. Encontrar y Generar Prisma (Fijar Estructura)
-        run: |
-          # Este comando busca el archivo schema.prisma en cualquier subcarpeta
-          SCHEMA_PATH=$(find . -name "schema.prisma" | head -n 1)
-          echo "Archivo encontrado en: $SCHEMA_PATH"
-          npx prisma generate --schema=$SCHEMA_PATH
+      - name: 4. Generar Base de Datos (Prisma)
+        run: npx prisma generate
 
       - name: 5. Compilar Proyecto
         run: npm run build
 
       - name: 6. Empaquetar para cPanel
         run: |
-          # Buscamos de nuevo el directorio de prisma para incluirlo en el zip
-          PRISMA_DIR=$(find . -name "schema.prisma" -exec dirname {} \;)
-          zip -r dist.zip dist package.json package-lock.json $PRISMA_DIR
+          # Creamos el ZIP con lo necesario para que funcione en tu hosting
+          zip -r dist.zip dist package.json package-lock.json prisma
+          echo "Archivo comprimido listo."
 
       - name: 7. Subir Archivo Final
         uses: actions/upload-artifact@v4
