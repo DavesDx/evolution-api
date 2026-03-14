@@ -1,29 +1,35 @@
 name: Compilar para cPanel
 on: [workflow_dispatch]
+
+# Forzamos a GitHub a usar las versiones más modernas de este año
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Configurar Node.js
+      - name: Descargar Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: 22 # Usamos una versión más reciente para evitar avisos
+          node-version: 24
 
-      - name: Instalar dependencias
+      - name: Instalar Dependencias
         run: npm install
 
-      - name: Generar Cliente de Prisma (ESTO CORRIGE EL ERROR)
+      - name: Generar Prisma (Fijar Estructura)
         run: npx prisma generate
 
-      - name: Compilar proyecto
+      - name: Compilar Proyecto
         run: npm run build
 
       - name: Empaquetar para cPanel
         run: zip -r dist.zip dist package.json package-lock.json prisma
 
-      - name: Subir resultado
+      - name: Subir Archivo Final
         uses: actions/upload-artifact@v4
         with:
           name: evolucion-api-listo
