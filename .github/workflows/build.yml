@@ -1,1 +1,22 @@
-
+name: Compilar para cPanel
+on: [workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar dependencias
+        run: npm install
+      - name: Compilar proyecto
+        run: npm run build
+      - name: Empaquetar para cPanel
+        run: zip -r dist.zip dist package.json package-lock.json prisma
+      - name: Subir resultado
+        uses: actions/upload-artifact@v4
+        with:
+          name: evolucion-api-listo
+          path: dist.zip
+          
