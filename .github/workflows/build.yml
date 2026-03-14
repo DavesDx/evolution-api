@@ -2,40 +2,47 @@ name: Compilar para cPanel
 on: [workflow_dispatch]
 
 env:
+  # Forzamos herramientas modernas para este 2026
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Limpiar y Descargar Código Oficial
-        run: |
-          # Forzamos la descarga en una subcarpeta para evitar conflictos
-          git clone https://github.com/EvolutionAPI/evolution-api.git source_code
-          echo "Código descargado en la carpeta source_code"
+      - name: 1. Descargar Código Oficial (Método Directo)
+        uses: actions/checkout@v4
+        with:
+          repository: EvolutionAPI/evolution-api # Trae el código original directamente
 
       - name: 2. Configurar Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - name: 3. Instalar y Compilar
-        run: |
-          cd source_code
-          npm install
-          
-          # Buscamos el schema y generamos la base de datos
-          SCHEMA_PATH=$(find . -name "schema.prisma")
-          echo "Schema encontrado en: $SCHEMA_PATH"
-          npx prisma generate --schema=$SCHEMA_PATH
-          
-          # Compilamos
-          npm run build
-          
-          # Creamos el ZIP desde adentro de la carpeta
-          zip -r ../dist.zip dist package.json package-lock.json $(dirname $SCHEMA_PATH)
+      - name: 3. Instalar Dependencias
+        run: npm install
 
-      - name: 4. Subir Archivo Final
+      - name: 4. Generar Prisma y Compilar
+        run: |
+          # Intentamos encontrar el schema en las rutas más comunes
+          if [ -f "./prisma/schema.prisma" ]; then
+            npx prisma generate --schema=./prisma/schema.prisma
+          else
+            # Si no está en la raíz, lo buscamos agresivamente
+            SCHEMA_PATH=$(find . -name "schema.prisma" | head -n 1)
+            npx prisma generate --schema=$SCHEMA_PATH
+          fi
+          
+          # Compilamos el código TypeScript a JavaScript
+          npm run build
+
+      - name: 5. Crear Paquete para cPanel
+        run: |
+          # Solo metemos en el ZIP lo que cPanel necesita para correr
+          zip -r dist.zip dist package.json package-lock.json prisma
+          echo "¡Paquete listo para descargar!"
+
+      - name: 6. Entregar Archivo
         uses: actions/upload-artifact@v4
         with:
           name: evolucion-api-listo
