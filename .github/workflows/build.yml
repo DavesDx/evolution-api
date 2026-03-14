@@ -1,7 +1,6 @@
 name: Compilar para cPanel
 on: [workflow_dispatch]
 
-# Forzamos a GitHub a usar las versiones más modernas de este año
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -9,27 +8,34 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar Código
+      - name: 1. Descargar Código
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js 24
+      - name: 2. Configurar Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - name: Instalar Dependencias
+      - name: 3. Instalar Dependencias
         run: npm install
 
-      - name: Generar Prisma (Fijar Estructura)
-        run: npx prisma generate
+      - name: 4. Encontrar y Generar Prisma (Fijar Estructura)
+        run: |
+          # Este comando busca el archivo schema.prisma en cualquier subcarpeta
+          SCHEMA_PATH=$(find . -name "schema.prisma" | head -n 1)
+          echo "Archivo encontrado en: $SCHEMA_PATH"
+          npx prisma generate --schema=$SCHEMA_PATH
 
-      - name: Compilar Proyecto
+      - name: 5. Compilar Proyecto
         run: npm run build
 
-      - name: Empaquetar para cPanel
-        run: zip -r dist.zip dist package.json package-lock.json prisma
+      - name: 6. Empaquetar para cPanel
+        run: |
+          # Buscamos de nuevo el directorio de prisma para incluirlo en el zip
+          PRISMA_DIR=$(find . -name "schema.prisma" -exec dirname {} \;)
+          zip -r dist.zip dist package.json package-lock.json $PRISMA_DIR
 
-      - name: Subir Archivo Final
+      - name: 7. Subir Archivo Final
         uses: actions/upload-artifact@v4
         with:
           name: evolucion-api-listo
