@@ -8,40 +8,34 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Limpiar y Descargar Código Real
+      - name: 1. Limpiar y Descargar Código Oficial
         run: |
-          # Forzamos la descarga del código oficial en la carpeta actual
-          git clone https://github.com/EvolutionAPI/evolution-api.git .
-          ls -R prisma/ # Esto nos dirá si el archivo existe
-          
+          # Forzamos la descarga en una subcarpeta para evitar conflictos
+          git clone https://github.com/EvolutionAPI/evolution-api.git source_code
+          echo "Código descargado en la carpeta source_code"
+
       - name: 2. Configurar Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - name: 3. Instalar Dependencias
+      - name: 3. Instalar y Compilar
         run: |
+          cd source_code
           npm install
-          # Instalamos Prisma globalmente por si acaso
-          npm install -g prisma 
-
-      - name: 4. Generar Base de Datos (Prisma)
-        run: |
-          # Buscamos el archivo y lo usamos directamente
+          
+          # Buscamos el schema y generamos la base de datos
           SCHEMA_PATH=$(find . -name "schema.prisma")
-          echo "Usando schema en: $SCHEMA_PATH"
+          echo "Schema encontrado en: $SCHEMA_PATH"
           npx prisma generate --schema=$SCHEMA_PATH
+          
+          # Compilamos
+          npm run build
+          
+          # Creamos el ZIP desde adentro de la carpeta
+          zip -r ../dist.zip dist package.json package-lock.json $(dirname $SCHEMA_PATH)
 
-      - name: 5. Compilar Proyecto
-        run: npm run build
-
-      - name: 6. Empaquetar para cPanel
-        run: |
-          # Solo guardamos lo necesario para no saturar tu cPanel
-          zip -r dist.zip dist package.json package-lock.json prisma
-          echo "¡ZIP CREADO EXITOSAMENTE!"
-
-      - name: 7. Subir Archivo Final
+      - name: 4. Subir Archivo Final
         uses: actions/upload-artifact@v4
         with:
           name: evolucion-api-listo
