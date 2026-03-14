@@ -5,18 +5,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22 # Usamos una versión más reciente para evitar avisos
+
       - name: Instalar dependencias
         run: npm install
+
+      - name: Generar Cliente de Prisma (ESTO CORRIGE EL ERROR)
+        run: npx prisma generate
+
       - name: Compilar proyecto
         run: npm run build
+
       - name: Empaquetar para cPanel
         run: zip -r dist.zip dist package.json package-lock.json prisma
+
       - name: Subir resultado
         uses: actions/upload-artifact@v4
         with:
           name: evolucion-api-listo
           path: dist.zip
-          
